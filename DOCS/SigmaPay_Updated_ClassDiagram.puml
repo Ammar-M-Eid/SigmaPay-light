@@ -1,0 +1,1046 @@
+@startuml SigmaPay_Architecture_With_Visual_Patterns
+
+' ============================================================================
+' SigmaPay - Architecture with Visual Design Pattern Representation
+' ============================================================================
+' This diagram uses PlantUML stereotypes, colors, and organization to
+' explicitly highlight the 13 GoF design patterns implementation
+' ============================================================================
+
+skinparam linetype ortho
+skinparam nodesep 60
+skinparam ranksep 90
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+
+' Color scheme for pattern visualization
+skinparam class {
+    BackgroundColor<<Singleton>> LightYellow
+    BorderColor<<Singleton>> Gold
+    
+    BackgroundColor<<Factory>> LightGreen
+    BorderColor<<Factory>> DarkGreen
+    
+    BackgroundColor<<Builder>> LightCyan
+    BorderColor<<Builder>> DarkCyan
+    
+    BackgroundColor<<Facade>> LightCoral
+    BorderColor<<Facade>> DarkRed
+    
+    BackgroundColor<<Adapter>> LightBlue
+    BorderColor<<Adapter>> DarkBlue
+    
+    BackgroundColor<<Proxy>> Lavender
+    BorderColor<<Proxy>> Purple
+    
+    BackgroundColor<<Composite>> LightSalmon
+    BorderColor<<Composite>> OrangeRed
+    
+    BackgroundColor<<Flyweight>> LightGoldenRodYellow
+    BorderColor<<Flyweight>> Goldenrod
+    
+    BackgroundColor<<Strategy>> PaleGreen
+    BorderColor<<Strategy>> Green
+    
+    BackgroundColor<<Observer>> PaleTurquoise
+    BorderColor<<Observer>> Teal
+    
+    BackgroundColor<<ChainOfResp>> LightPink
+    BorderColor<<ChainOfResp>> HotPink
+    
+    BackgroundColor<<State>> Plum
+    BorderColor<<State>> DarkMagenta
+    
+    BackgroundColor<<Template>> LightSteelBlue
+    BorderColor<<Template>> SteelBlue
+}
+
+' ==============================================
+' CORE SYSTEM / ENTRY POINTS
+' ==============================================
+package "Core System" <<Rectangle>> {
+    
+    class SigmaPay {
+        + processRequest(request): Response
+    }
+    
+    ' PATTERN 4: FACADE
+    class SigmaPayFacade <<Facade>> {
+        - accountService: IAccountService
+        - budgetService: IBudgetService
+        - goalService: IGoalService
+        - groupSavingsService: IGroupSavingsService
+        - paymentsService: IPaymentsServiceBL
+        - reportingService: IReportingService
+        - notificationService: INotificationServiceBL
+        
+        + handle(request): Response
+        + createAccount(data): Response
+        + login(credentials): Response
+        + createBudget(plan): Response
+        + createGoal(goal): Response
+        + processPayment(request): Response
+        + generateReport(filter): Report
+        + sendNotification(message): void
+    }
+    
+    note right of SigmaPayFacade
+        <b>PATTERN: Facade</b>
+        Provides unified interface to
+        7 different service subsystems
+        Simplifies client interaction
+    end note
+    
+    ' Input/Output Interfaces (L01)
+    interface I8input { 
+      void receiveUserRequest(string requestType, string requestData)  
+      void captureUserAction(string userId, string actionType) 
+    } 
+    
+    interface I9output { 
+      void sendResponse(string userId, string responseData)  
+      void displayError(string userId, string errorMessage)  
+    }
+    
+    class input
+    class output
+}
+
+' ==============================================
+' PRESENTATION LAYER (Controllers)
+' ==============================================
+package "Presentation Layer (Controller)" <<Rectangle>> {
+    
+    class Controller {
+        - accountService: IAccountService
+        - budgetService: IBudgetService
+        - goalService: IGoalService
+        - groupSavingsService: IGroupSavingsService
+        - paymentsService: IPaymentsServiceBL
+        - reportingService: IReportingService
+        - notificationService: INotificationServiceBL
+    }
+    
+    ' Controller Interfaces
+    interface IControllerAuth {
+      boolean ctlCreateAccount(String username, String email, String password, String phoneNumber)
+      boolean ctlUpdateUserInfo(String userId, String newEmail, String newPhoneNumber, String newAddress)
+      boolean ctlDeleteAccount(String userId)
+      boolean ctlChangeUsername(String userId, String newUsername)
+      boolean ctlResetPassword(String userId, String oldPassword, String newPassword)
+      boolean ctlVerifyIdentity(String userId, String verificationCode, String method)
+      IUserAccount ctlGetAccountDetails(String userId)
+      boolean ctlEnableAccount(String userId)
+      boolean ctlDisableAccount(String userId)
+    }
+
+    interface IControllerBudget {
+      IBudgetPlan ctlCreateBudget(String userId, double totalAmount, String startDate, String endDate, List categories)
+      boolean ctlRecordExpense(String userId, double amount, String category, String date, String paymentMethod)
+      boolean ctlSendBudgetAlert(String userId, String alertType, String message)
+    }
+
+    interface IControllerGoals {
+      IFinancialGoal ctlSetGoal(String userId, String goalType, double targetAmount, String deadline, String priorityLevel)
+      IGoalProgress ctlTrackProgress(String userId, String goalId, boolean detailed)
+      IAIRecommendation ctlGetOptimizedGoalPlan(String userId, String financialData, int timeFrame, boolean riskSensitive)
+    }
+
+    interface IControllerGroupSavings {
+      ISavingsGroup ctlCreateGroup(String groupName, List members)
+      boolean ctlAddMember(String groupId, String memberId)
+      boolean ctlProcessDeposit(String groupId, String memberId, double amount)
+      String ctlGenerateGroupReport(String groupId)
+    }
+
+    interface IControllerReports {
+      String ctlGenerateIncomeStatement(String userId)
+      String ctlGenerateMonthlySummary(String userId)
+      boolean ctlExportToPDF(String reportType)
+    }
+
+    interface IControllerPayments {
+      boolean ctlProcessPayment(String userId, String methodId, double amount, String merchantId)
+      boolean ctlRequestRefund(String userId, String transactionId, double amount, String reason)
+      boolean ctlVerifyPaymentMethod(String userId, String methodId, String CVV)
+    }
+
+    interface IControllerNotifications {
+      boolean ctlSendAlert(string userId, string message)
+      boolean ctlSetNotificationPreference(string userId, string preferenceType, boolean isEnabled)
+      List ctlGetNotificationHistory(string userId)
+    }
+
+    interface IControllerInput {
+      void handleRequest(string userId, string requestType, string requestData)
+      void handleAction(string userId, string actionType)
+    }
+
+    interface IControllerOutput {
+      void respond(string userId, string responseData)
+      void fail(string userId, string errorMessage)
+    }
+    
+    Controller ..|> IControllerAuth
+    Controller ..|> IControllerBudget
+    Controller ..|> IControllerGoals
+    Controller ..|> IControllerGroupSavings
+    Controller ..|> IControllerReports
+    Controller ..|> IControllerPayments
+    Controller ..|> IControllerNotifications
+    Controller ..|> IControllerInput
+    Controller ..|> IControllerOutput
+    
+    IControllerInput ..|> I8input
+    IControllerOutput ..|> I9output
+}
+
+' ==============================================
+' PATTERN 1: FACTORY METHOD
+' ==============================================
+package "PATTERN 1: Factory Method" <<Rectangle>> #EEFFEE {
+    
+    abstract class PaymentCreator <<Factory>> {
+        + {abstract} createPayment(methodType: String): IPayment
+        + processPayment(methodType: String): IPayment
+    }
+    
+    class ConcretePaymentCreator <<Factory>> {
+        + createPayment(methodType: String): IPayment
+    }
+    
+    note right of PaymentCreator
+        <b>PATTERN: Factory Method</b>
+        Eliminates IF/ELSE chains
+        for payment type creation
+        (FR 9.1, 9.2, 4.2)
+    end note
+    
+    PaymentCreator <|-- ConcretePaymentCreator
+}
+
+' ==============================================
+' PATTERN 2: BUILDER
+' ==============================================
+package "PATTERN 2: Builder" <<Rectangle>> #E6F7FF {
+    
+    class ReportBuilder <<Builder>> {
+        - report: Report
+        + reset(): void
+        + buildHeader(title: String): ReportBuilder
+        + buildSection(name: String, data: Object): ReportBuilder
+        + buildChart(type: String, data: Object): ReportBuilder
+        + buildTotals(totals: Map): ReportBuilder
+        + buildAnalytics(analytics: Object): ReportBuilder
+        + buildFooter(): ReportBuilder
+        + getReport(): IReport
+    }
+    
+    note right of ReportBuilder
+        <b>PATTERN: Builder</b>
+        Constructs complex reports
+        step-by-step
+        (FR 7.1, 7.2)
+    end note
+}
+
+' ==============================================
+' PATTERN 3: SINGLETON
+' ==============================================
+package "PATTERN 3: Singleton" <<Rectangle>> #FFFFEE {
+    
+    class NotificationManager <<Singleton>> {
+        - {static} instance: NotificationManager
+        - observers: List<INotificationObserver>
+        - scheduler: Scheduler
+        
+        - NotificationManager()
+        + {static} getInstance(): NotificationManager
+        + subscribe(observer: INotificationObserver): void
+        + unsubscribe(observer: INotificationObserver): void
+        + notify(event: NotificationEvent): void
+    }
+    
+    class Scheduler <<Singleton>> {
+        - {static} instance: Scheduler
+        - scheduledTasks: Map<String, Task>
+        
+        - Scheduler()
+        + {static} getInstance(): Scheduler
+        + scheduleTask(task: Task, time: DateTime): String
+        + cancelTask(taskId: String): void
+    }
+    
+    class DatabaseConnectionPool <<Singleton>> {
+        - {static} instance: DatabaseConnectionPool
+        - connections: Queue<Connection>
+        - maxConnections: int
+        
+        - DatabaseConnectionPool()
+        + {static} getInstance(): DatabaseConnectionPool
+        + getConnection(): Connection
+        + releaseConnection(conn: Connection): void
+    }
+    
+    note right of NotificationManager
+        <b>PATTERN: Singleton</b>
+        Single instance for centralized
+        notification management
+        (FR 7.x)
+    end note
+}
+
+' ==============================================
+' PATTERN 5: ADAPTER
+' ==============================================
+package "PATTERN 5: Adapter" <<Rectangle>> #E6F2FF {
+    
+    interface IPaymentGatewayAdapter <<Adapter>> {
+        + processTransaction(transaction: ITransaction): Response
+        + refund(transactionId: String): Response
+        + getStatus(transactionId: String): String
+    }
+    
+    class FawryAdapter <<Adapter>> {
+        - fawryAPI: FawryAPI
+        + processTransaction(transaction: ITransaction): Response
+        + refund(transactionId: String): Response
+        + getStatus(transactionId: String): String
+    }
+    
+    class BankAPIAdapter <<Adapter>> {
+        - bankAPI: BankAPI
+        + processTransaction(transaction: ITransaction): Response
+        + refund(transactionId: String): Response
+        + getStatus(transactionId: String): String
+    }
+    
+    class VodafoneCashAdapter <<Adapter>> {
+        - vodafoneAPI: VodafoneAPI
+        + processTransaction(transaction: ITransaction): Response
+        + refund(transactionId: String): Response
+        + getStatus(transactionId: String): String
+    }
+    
+    note right of IPaymentGatewayAdapter
+        <b>PATTERN: Adapter</b>
+        Unifies different payment
+        gateway APIs
+        (FR 9.1, 4.2)
+    end note
+    
+    IPaymentGatewayAdapter <|.. FawryAdapter
+    IPaymentGatewayAdapter <|.. BankAPIAdapter
+    IPaymentGatewayAdapter <|.. VodafoneCashAdapter
+}
+
+' ==============================================
+' PATTERN 6: PROXY
+' ==============================================
+package "PATTERN 6: Proxy" <<Rectangle>> #F0E6FF {
+    
+    class AuthProxy <<Proxy>> {
+        - realAuthService: AuthenticationService
+        - sessionManager: SessionManager
+        
+        + authenticate(credentials: ICredentials): boolean
+        + authorize(user: IUserAccount, resource: String): boolean
+        + verify2FA(user: IUserAccount, code: String): boolean
+        + validateSession(sessionId: String): boolean
+    }
+    
+    note right of AuthProxy
+        <b>PATTERN: Proxy</b>
+        Controls access to
+        authentication service
+        (FR 1.2, 1.6)
+    end note
+}
+
+' ==============================================
+' PATTERN 7: COMPOSITE
+' ==============================================
+package "PATTERN 7: Composite" <<Rectangle>> #FFE6E6 {
+    
+    abstract class IBudgetCategoryComponent <<Composite>> {
+        + {abstract} getName(): String
+        + {abstract} getAmount(): IMoney
+        + {abstract} add(component: IBudgetCategoryComponent): void
+        + {abstract} remove(component: IBudgetCategoryComponent): void
+    }
+    
+    class BudgetCategoryLeaf <<Composite>> {
+        - name: String
+        - amount: Money
+        
+        + getName(): String
+        + getAmount(): IMoney
+        + add(component: IBudgetCategoryComponent): void
+        + remove(component: IBudgetCategoryComponent): void
+    }
+    
+    class BudgetCategoryGroup <<Composite>> {
+        - name: String
+        - children: List<IBudgetCategoryComponent>
+        
+        + getName(): String
+        + getAmount(): IMoney
+        + add(component: IBudgetCategoryComponent): void
+        + remove(component: IBudgetCategoryComponent): void
+    }
+    
+    note right of IBudgetCategoryComponent
+        <b>PATTERN: Composite</b>
+        Hierarchical budget categories
+        replacing List<String>
+        (FR 2.1, 2.5)
+    end note
+    
+    IBudgetCategoryComponent <|.. BudgetCategoryLeaf
+    IBudgetCategoryComponent <|.. BudgetCategoryGroup
+    BudgetCategoryGroup o-- IBudgetCategoryComponent
+}
+
+' ==============================================
+' PATTERN 8: FLYWEIGHT
+' ==============================================
+package "PATTERN 8: Flyweight" <<Rectangle>> #FFFACD {
+    
+    class CurrencyFlyweight <<Flyweight>> {
+        - {static} currencies: Map<String, Currency>
+        
+        + {static} getCurrency(code: String): ICurrency
+    }
+    
+    class MerchantTypeFlyweight <<Flyweight>> {
+        - {static} merchantTypes: Map<String, MerchantType>
+        
+        + {static} getMerchantType(type: String): MerchantType
+    }
+    
+    note right of CurrencyFlyweight
+        <b>PATTERN: Flyweight</b>
+        Shares Currency instances
+        reduces memory usage
+        (FR 5.x)
+    end note
+}
+
+' ==============================================
+' PATTERN 9: STRATEGY
+' ==============================================
+package "PATTERN 9: Strategy" <<Rectangle>> #E8F5E9 {
+    
+    interface IPaymentStrategy <<Strategy>> {
+        + execute(payment: IPayment, adapter: IPaymentGatewayAdapter): Response
+        + validate(payment: IPayment): boolean
+        + calculateFees(amount: IMoney): IMoney
+    }
+    
+    class CardStrategy <<Strategy>>
+    class WalletStrategy <<Strategy>>
+    class BankStrategy <<Strategy>>
+    class GroupContributionStrategy <<Strategy>>
+    
+    note right of IPaymentStrategy
+        <b>PATTERN: Strategy</b>
+        Encapsulates payment
+        processing algorithms
+        (FR 9.1, 9.2)
+    end note
+    
+    IPaymentStrategy <|.. CardStrategy
+    IPaymentStrategy <|.. WalletStrategy
+    IPaymentStrategy <|.. BankStrategy
+    IPaymentStrategy <|.. GroupContributionStrategy
+}
+
+' ==============================================
+' PATTERN 10: OBSERVER
+' ==============================================
+package "PATTERN 10: Observer" <<Rectangle>> #E0F7FA {
+    
+    interface INotificationSubject <<Observer>> {
+        + attach(observer: INotificationObserver): void
+        + detach(observer: INotificationObserver): void
+        + notifyObservers(event: Event): void
+    }
+    
+    interface INotificationObserver <<Observer>> {
+        + update(event: Event): void
+    }
+    
+    class BudgetObserver <<Observer>>
+    class GoalObserver <<Observer>>
+    class PaymentObserver <<Observer>>
+    class ContributionObserver <<Observer>>
+    
+    note right of INotificationSubject
+        <b>PATTERN: Observer</b>
+        Event-driven notifications
+        Loose coupling
+        (FR 2.4, 3.2, 4.5, 9.1)
+    end note
+    
+    INotificationObserver <|.. BudgetObserver
+    INotificationObserver <|.. GoalObserver
+    INotificationObserver <|.. PaymentObserver
+    INotificationObserver <|.. ContributionObserver
+    INotificationSubject --> INotificationObserver
+}
+
+' ==============================================
+' PATTERN 11: CHAIN OF RESPONSIBILITY
+' ==============================================
+package "PATTERN 11: Chain of Responsibility" <<Rectangle>> #FFE6F0 {
+    
+    abstract class ValidationHandler <<ChainOfResp>> {
+        # nextHandler: ValidationHandler
+        
+        + setNext(handler: ValidationHandler): ValidationHandler
+        + {abstract} validate(request: ValidationRequest): ValidationResult
+        + handle(request: ValidationRequest): ValidationResult
+    }
+    
+    class EmailFormatHandler <<ChainOfResp>>
+    class DuplicateUserHandler <<ChainOfResp>>
+    class PasswordStrengthHandler <<ChainOfResp>>
+    class IdentityVerificationHandler <<ChainOfResp>>
+    
+    note right of ValidationHandler
+        <b>PATTERN: Chain of Responsibility</b>
+        Chains validation steps
+        Flexible validation pipeline
+        (FR 1.1, 1.4)
+    end note
+    
+    ValidationHandler <|-- EmailFormatHandler
+    ValidationHandler <|-- DuplicateUserHandler
+    ValidationHandler <|-- PasswordStrengthHandler
+    ValidationHandler <|-- IdentityVerificationHandler
+}
+
+' ==============================================
+' PATTERN 12: STATE
+' ==============================================
+package "PATTERN 12: State" <<Rectangle>> #E8E0F5 {
+    
+    interface IGoalState <<State>> {
+        + start(goal: IFinancialGoal): void
+        + pause(goal: IFinancialGoal): void
+        + complete(goal: IFinancialGoal): void
+        + cancel(goal: IFinancialGoal): void
+    }
+    
+    class ActiveGoalState <<State>>
+    class PausedGoalState <<State>>
+    class CompletedGoalState <<State>>
+    class CancelledGoalState <<State>>
+    
+    interface IPaymentState <<State>> {
+        + process(payment: IPayment): void
+        + complete(payment: IPayment): void
+        + fail(payment: IPayment): void
+        + refund(payment: IPayment): void
+    }
+    
+    class PendingPaymentState <<State>>
+    class ProcessingPaymentState <<State>>
+    class CompletedPaymentState <<State>>
+    class FailedPaymentState <<State>>
+    
+    note right of IGoalState
+        <b>PATTERN: State</b>
+        State-dependent behavior
+        for Goals and Payments
+        (FR 3.1, 9.1)
+    end note
+    
+    IGoalState <|.. ActiveGoalState
+    IGoalState <|.. PausedGoalState
+    IGoalState <|.. CompletedGoalState
+    IGoalState <|.. CancelledGoalState
+    
+    IPaymentState <|.. PendingPaymentState
+    IPaymentState <|.. ProcessingPaymentState
+    IPaymentState <|.. CompletedPaymentState
+    IPaymentState <|.. FailedPaymentState
+}
+
+' ==============================================
+' PATTERN 13: TEMPLATE METHOD
+' ==============================================
+package "PATTERN 13: Template Method" <<Rectangle>> #B0C4DE {
+    
+    abstract class ReportTemplate <<Template>> {
+        + generate(): IReport
+        # {abstract} prepareHeader(): void
+        # {abstract} collectData(): void
+        # {abstract} formatContent(): void
+        # {abstract} generateSummary(): void
+        # {abstract} exportPDF(): void
+    }
+    
+    class MonthlyReport <<Template>>
+    class IncomeStatementReport <<Template>>
+    class GroupSavingsReport <<Template>>
+    
+    note right of ReportTemplate
+        <b>PATTERN: Template Method</b>
+        Defines report generation
+        skeleton algorithm
+        (FR 7.1)
+    end note
+    
+    ReportTemplate <|-- MonthlyReport
+    ReportTemplate <|-- IncomeStatementReport
+    ReportTemplate <|-- GroupSavingsReport
+}
+
+' ==============================================
+' SERVICE INTERFACES LAYER
+' ==============================================
+package "Service Interfaces" <<Rectangle>> {
+    
+    interface IAccountService {
+        + createAccount(account: IAccount): String
+        + getAccount(accountId: String): IAccount
+        + updateAccount(account: IAccount): void
+        + deleteAccount(accountId: String): void
+        + getUserAccount(userId: String): IUserAccount
+    }
+    
+    interface IBudgetService {
+        + createBudget(plan: IBudgetPlan): String
+        + updateBudget(plan: IBudgetPlan): void
+        + deleteBudget(budgetId: String): void
+        + getBudget(budgetId: String): IBudgetPlan
+        + recordExpense(userId: String, amount: double, category: String): boolean
+        + analyzeSpending(budgetId: String): SpendingAnalysis
+    }
+    
+    interface IGoalService {
+        + createGoal(goal: IFinancialGoal): String
+        + updateGoal(goal: IFinancialGoal): void
+        + trackProgress(goalId: String): IGoalProgress
+        + contributeToGoal(goalId: String, amount: double): void
+    }
+    
+    interface IGroupSavingsService {
+        + createGroup(group: IGroupSavings): String
+        + joinGroup(groupId: String, userId: String): void
+        + contribute(groupId: String, userId: String, amount: double): void
+        + generateGroupReport(groupId: String): String
+    }
+    
+    interface IPaymentsServiceBL {
+        + processPayment(payment: IPayment): Response
+        + scheduleRecurringPayment(payment: IPayment, schedule: Schedule): String
+        + cancelPayment(paymentId: String): void
+        + refundPayment(paymentId: String): Response
+    }
+    
+    interface IReportingService {
+        + generateReport(filter: ReportFilter, type: String): IReport
+        + generateIncomeStatement(userId: String): String
+        + generateMonthlySummary(userId: String): String
+        + exportToPDF(report: IReport): byte[]
+    }
+    
+    interface INotificationServiceBL {
+        + sendNotification(notification: INotification): void
+        + sendAlert(userId: String, message: String): boolean
+        + getNotifications(userId: String): List<INotification>
+    }
+}
+
+' ==============================================
+' SERVICE IMPLEMENTATIONS
+' ==============================================
+package "Service Implementations" <<Rectangle>> {
+    
+    class AccountService {
+        - accountsRepository: IAccountsRepository
+        - userRepository: IUserRepository
+        - passwordManager: PasswordManager
+    }
+    
+    class BudgetService {
+        - budgetRepository: IBudgetRepository
+        - transactionRepository: ITransactionRepository
+    }
+    
+    class GoalService {
+        - goalRepository: IGoalRepository
+        - notificationManager: NotificationManager
+    }
+    
+    class GroupSavingsService {
+        - groupSavingsRepository: IGroupSavingsRepository
+        - notificationManager: NotificationManager
+    }
+    
+    class PaymentsServiceBL {
+        - paymentRepository: IPaymentRepository
+        - paymentCreator: PaymentCreator
+        - gatewayAdapterFactory: PaymentGatewayAdapterFactory
+        - notificationManager: NotificationManager
+    }
+    
+    class ReportingService {
+        - reportBuilder: ReportBuilder
+        - transactionRepository: ITransactionRepository
+        - reportFactory: ReportTemplateFactory
+    }
+    
+    class NotificationsServiceBL {
+        - notificationRepository: INotificationRepository
+        - notificationManager: NotificationManager
+    }
+    
+    class AuthenticationService {
+        - userRepository: IUserRepository
+        - passwordManager: PasswordManager
+        - authProxy: AuthProxy
+        - validationChain: ValidationHandler
+    }
+    
+    IAccountService <|.. AccountService
+    IBudgetService <|.. BudgetService
+    IGoalService <|.. GoalService
+    IGroupSavingsService <|.. GroupSavingsService
+    IPaymentsServiceBL <|.. PaymentsServiceBL
+    IReportingService <|.. ReportingService
+    INotificationServiceBL <|.. NotificationsServiceBL
+}
+
+' ==============================================
+' ENTITY INTERFACES
+' ==============================================
+package "Entity Interfaces" <<Rectangle>> {
+    
+    interface IUserAccount
+    interface IAccount
+    interface IMoney
+    interface ITransaction
+    interface IBudgetPlan
+    interface IFinancialGoal
+    interface IPayment
+    interface IGroupSavings
+    interface ISavingsGroup
+    interface IReport
+    interface INotification
+    interface IGoalProgress
+    interface IAIRecommendation
+}
+
+' ==============================================
+' DOMAIN ENTITIES
+' ==============================================
+package "Domain Entities (Refactored)" <<Rectangle>> {
+    
+    ' Refactored UserAccount (Extract Class applied)
+    class UserAccount {
+        - userId: String
+        - credentials: Credentials
+        - profile: UserProfile
+        - securitySettings: SecuritySettings
+    }
+    
+    class Credentials {
+        - username: String
+        - passwordHash: String
+    }
+    
+    class UserProfile {
+        - email: String
+        - phone: String
+        - address: Address
+    }
+    
+    class SecuritySettings {
+        - twoFactorEnabled: boolean
+        - accountStatus: String
+    }
+    
+    ' Money Value Object (Replace Primitive)
+    class Money {
+        - amount: BigDecimal
+        - currency: Currency
+    }
+    
+    class Currency {
+        - code: String
+        - symbol: String
+        - exchangeRate: double
+    }
+    
+    class Account {
+        - accountId: String
+        - balance: Money
+    }
+    
+    class Transaction {
+        - transactionId: String
+        - amount: Money
+        - merchantType: MerchantType
+    }
+    
+    class BudgetPlan {
+        - budgetId: String
+        - totalAmount: Money
+        - rootCategory: BudgetCategoryGroup
+    }
+    
+    class FinancialGoal {
+        - goalId: String
+        - targetAmount: Money
+        - currentAmount: Money
+        - state: IGoalState
+    }
+    
+    abstract class Payment {
+        # paymentId: String
+        # amount: Money
+        # state: IPaymentState
+        # strategy: IPaymentStrategy
+    }
+    
+    class CardPayment
+    class WalletPayment
+    class BankPayment
+    class GroupContributionPayment
+    
+    class GroupSavings {
+        - groupId: String
+        - targetAmount: Money
+    }
+    
+    class Report {
+        - reportId: String
+        - sections: List<ReportSection>
+    }
+    
+    class Notification {
+        - notificationId: String
+        - message: String
+    }
+    
+    ' Entity implementations
+    IUserAccount <|.. UserAccount
+    IAccount <|.. Account
+    IMoney <|.. Money
+    ITransaction <|.. Transaction
+    IBudgetPlan <|.. BudgetPlan
+    IFinancialGoal <|.. FinancialGoal
+    IPayment <|.. Payment
+    IGroupSavings <|.. GroupSavings
+    IReport <|.. Report
+    INotification <|.. Notification
+    
+    Payment <|-- CardPayment
+    Payment <|-- WalletPayment
+    Payment <|-- BankPayment
+    Payment <|-- GroupContributionPayment
+    
+    UserAccount --> Credentials
+    UserAccount --> UserProfile
+    UserAccount --> SecuritySettings
+    Money --> Currency
+    BudgetPlan --> BudgetCategoryGroup
+    FinancialGoal --> IGoalState
+    Payment --> IPaymentState
+    Payment --> IPaymentStrategy
+}
+
+' ==============================================
+' REPOSITORY INTERFACES
+' ==============================================
+package "Repository Interfaces" <<Rectangle>> {
+    
+    interface IAccountsRepository {
+        + save(account: IAccount): String
+        + findById(accountId: String): IAccount
+    }
+    
+    interface IUserRepository {
+        + save(user: IUserAccount): String
+        + findById(userId: String): IUserAccount
+    }
+    
+    interface ITransactionRepository {
+        + save(transaction: ITransaction): String
+        + findById(transactionId: String): ITransaction
+    }
+    
+    interface IBudgetRepository {
+        + save(budget: IBudgetPlan): String
+        + findById(budgetId: String): IBudgetPlan
+    }
+    
+    interface IGoalRepository {
+        + save(goal: IFinancialGoal): String
+        + findById(goalId: String): IFinancialGoal
+    }
+    
+    interface IPaymentRepository {
+        + save(payment: IPayment): String
+        + findById(paymentId: String): IPayment
+    }
+    
+    interface IGroupSavingsRepository {
+        + save(group: IGroupSavings): String
+        + findById(groupId: String): IGroupSavings
+    }
+    
+    interface INotificationRepository {
+        + save(notification: INotification): String
+        + findById(notificationId: String): INotification
+    }
+    
+    interface IDataAccessLayer {
+        + connect(): Connection
+        + executeQuery(query: String): ResultSet
+    }
+}
+
+' ==============================================
+' REPOSITORY IMPLEMENTATIONS
+' ==============================================
+package "Repository Implementations" <<Rectangle>> {
+    
+    class AccountsRepositoryImpl {
+        - dataAccessLayer: IDataAccessLayer
+    }
+    
+    class UserRepositoryImpl {
+        - dataAccessLayer: IDataAccessLayer
+    }
+    
+    class TransactionRepositoryImpl {
+        - dataAccessLayer: IDataAccessLayer
+    }
+    
+    class BudgetRepositoryImpl {
+        - dataAccessLayer: IDataAccessLayer
+    }
+    
+    class GoalRepositoryImpl {
+        - dataAccessLayer: IDataAccessLayer
+    }
+    
+    class PaymentRepositoryImpl {
+        - dataAccessLayer: IDataAccessLayer
+    }
+    
+    class GroupSavingsRepositoryImpl {
+        - dataAccessLayer: IDataAccessLayer
+    }
+    
+    class NotificationRepositoryImpl {
+        - dataAccessLayer: IDataAccessLayer
+    }
+    
+    class DataAccessLayerImpl {
+        - connectionPool: DatabaseConnectionPool
+    }
+    
+    IAccountsRepository <|.. AccountsRepositoryImpl
+    IUserRepository <|.. UserRepositoryImpl
+    ITransactionRepository <|.. TransactionRepositoryImpl
+    IBudgetRepository <|.. BudgetRepositoryImpl
+    IGoalRepository <|.. GoalRepositoryImpl
+    IPaymentRepository <|.. PaymentRepositoryImpl
+    IGroupSavingsRepository <|.. GroupSavingsRepositoryImpl
+    INotificationRepository <|.. NotificationRepositoryImpl
+    IDataAccessLayer <|.. DataAccessLayerImpl
+    
+    AccountsRepositoryImpl --> IDataAccessLayer
+    UserRepositoryImpl --> IDataAccessLayer
+    TransactionRepositoryImpl --> IDataAccessLayer
+    BudgetRepositoryImpl --> IDataAccessLayer
+    GoalRepositoryImpl --> IDataAccessLayer
+    PaymentRepositoryImpl --> IDataAccessLayer
+    GroupSavingsRepositoryImpl --> IDataAccessLayer
+    NotificationRepositoryImpl --> IDataAccessLayer
+}
+
+' ==============================================
+' EXTERNAL SYSTEMS
+' ==============================================
+package "External Systems" <<Rectangle>> {
+    
+    class FawryAPI <<external>>
+    class BankAPI <<external>>
+    class VodafoneAPI <<external>>
+    class EmailService <<external>>
+    class SMSService <<external>>
+}
+
+' ==============================================
+' KEY RELATIONSHIPS
+' ==============================================
+
+' Core System
+SigmaPay o-- Controller
+SigmaPay o-- SigmaPayFacade
+
+SigmaPay *-- IAccountService
+SigmaPay *-- IBudgetService
+SigmaPay *-- IGoalService
+SigmaPay *-- IGroupSavingsService
+SigmaPay *-- IReportingService
+SigmaPay *-- IPaymentsServiceBL
+SigmaPay o-- INotificationsServiceBL
+
+' Facade dependencies (Service Interfaces only)
+SigmaPayFacade --> IAccountService
+SigmaPayFacade --> IBudgetService
+SigmaPayFacade --> IGoalService
+SigmaPayFacade --> IGroupSavingsService
+SigmaPayFacade --> IPaymentsServiceBL
+SigmaPayFacade --> IReportingService
+SigmaPayFacade --> INotificationServiceBL
+
+' Controller dependencies (Service Interfaces only)
+Controller --> IAccountService
+Controller --> IBudgetService
+Controller --> IGoalService
+Controller --> IGroupSavingsService
+Controller --> IPaymentsServiceBL
+Controller --> IReportingService
+Controller --> INotificationServiceBL
+
+' Service dependencies on Repositories
+AccountService --> IAccountsRepository
+AccountService --> IUserRepository
+BudgetService --> IBudgetRepository
+BudgetService --> ITransactionRepository
+GoalService --> IGoalRepository
+GroupSavingsService --> IGroupSavingsRepository
+PaymentsServiceBL --> IPaymentRepository
+ReportingService --> ITransactionRepository
+NotificationsServiceBL --> INotificationRepository
+
+' Pattern usage in services
+PaymentsServiceBL --> PaymentCreator
+PaymentsServiceBL --> IPaymentGatewayAdapter
+ReportingService --> ReportBuilder
+ReportingService --> ReportTemplate
+GoalService --> NotificationManager
+GroupSavingsService --> NotificationManager
+NotificationsServiceBL --> NotificationManager
+AuthenticationService --> AuthProxy
+AuthenticationService --> ValidationHandler
+
+' External connections
+FawryAdapter --> FawryAPI
+BankAPIAdapter --> BankAPI
+VodafoneCashAdapter --> VodafoneAPI
+NotificationManager --> EmailService
+NotificationManager --> SMSService
+
+' Database connections
+DataAccessLayerImpl --> DatabaseConnectionPool
+
+@enduml

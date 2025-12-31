@@ -1,0 +1,428 @@
+
+# Deliverable 1 – Comprehensive Design Patterns & Refactoring Report (SigmaPay)
+
+This document represents the **final, expanded, fully detailed, submission‑ready** version of Deliverable 1 for CSE352 Milestone 3.  
+It integrates:
+
+- **All applicable GoF design patterns** from Lectures 5, 6, and 7  
+- **All applicable refactoring techniques** from Lecture 8  
+- **Exact class names from YOUR SigmaPay architecture**  
+- **Exact issues, smells, and required fixes**  
+- **Mapping to SigmaPay functional requirements (as written in your SRS)**  
+- **All citations to uploaded lecture files**
+
+This file is designed to be directly submitted.
+
+---
+
+# SECTION A — FINAL LIST OF ALL ADOPTED DESIGN PATTERNS
+
+SigmaPay adopts **12 fully valid patterns** (permitted by lectures) across:
+
+- **3 Creational**  
+- **4 Structural**  
+- **5 Behavioral**
+
+Each is mapped to:  
+1. Where it applies in YOUR system,  
+2. Which classes must be redesigned,  
+3. What problem it solves (lecture theory),  
+4. The EXACT functional requirement(s) addressed.
+
+---
+
+# CREATIONAL PATTERNS (Lecture 5)  
+Source: Lecture 5 – Creational Patterns fileciteturn0file5
+
+## 1. Factory Method  
+### • Applied to:
+- PaymentCreator (new)
+- CardPayment
+- WalletPayment
+- BankPayment
+- GroupContributionPayment
+
+### • Problem Found in Your Project:
+Payments were handled using **IF/ELSE** conditions in controller/service level:
+- IControllerPayments.ctlProcessPayment()  
+- PaymentsServiceBL.processPayment()  
+(See controller file) fileciteturn1file2
+
+### • Fix:
+Introduce PaymentCreator with:
+```java
+createPayment(methodType): Payment
+```
+
+### • Functional Requirements:
+- FR 9.1 Payment Processing  
+- FR 9.2 Recurring Payments  
+- FR 4.2 Group Contribution  
+
+---
+
+## 2. Builder Pattern  
+### • Applied to:
+- ReportBuilder  
+- MonthlyReport  
+- IncomeStatementReport  
+- GroupSavingsReport  
+
+### • Problem:
+ReportingService returns raw strings instead of structured reports.  
+See: ReportingService + IReportingService. fileciteturn1file1
+
+### • Fix:
+Introduce **ReportBuilder** for constructing:
+- sections  
+- charts  
+- totals  
+- analytics  
+- exportable PDF content  
+
+### • Functional Requirements:
+- FR 7.1 Generate customizable reports  
+- FR 7.2 Export reports to PDF  
+
+---
+
+## 3. Singleton  
+### • Applied to:
+- NotificationManager (new)  
+- Scheduler (new)  
+- DatabaseConnectionPool (optional)
+
+### • Problem:
+Notification logic was duplicated across:
+- IControllerNotifications
+- NotificationsServiceBL  
+fileciteturn1file2
+
+### • Fix:
+Centralize all notifications in a single NotificationManager.
+
+### • Requirements:
+- FR 7.x Notifications  
+- FR 9.2 Recurring payment schedule  
+
+---
+
+# STRUCTURAL PATTERNS (Lecture 6)  
+Source: Lecture 6 – Structural Patterns fileciteturn1file0
+
+## 4. Facade Pattern  
+### • Applied to:
+- SigmaPayFacade (new)
+Wraps:
+- AccountService
+- BudgetService
+- GoalService
+- GroupSavingsService
+- PaymentsServiceBL
+- ReportingService
+- NotificationsServiceBL
+
+### • Problem:
+Your system exposes **7 different controllers** to the UI.  
+This is not maintainable.
+
+### • Fix:
+Create a single, unified Facade:
+```
+facade.handle(request)
+```
+
+### • Requirements:
+- All Manage X: Accounts, Budget, Goals, Payments, Reports
+
+---
+
+## 5. Adapter Pattern  
+### • Applied to:
+- PaymentGatewayAdapter  
+- FawryAdapter  
+- BankAPIAdapter  
+- VodafoneCashAdapter  
+
+### • Problem:
+Payment integration tightly coupled inside ctlProcessPayment()  
+fileciteturn1file2
+
+### • Fix:
+Implement PaymentGatewayAdapter to unify external APIs.
+
+### • Requirements:
+- FR 9.1 Payment Processing  
+- FR 4.2 Group Contribution  
+
+---
+
+## 6. Proxy Pattern  
+### • Applied to:
+- AuthProxy
+
+### • Problem:
+Identity verification & 2FA appear directly in controllers:
+- ctlVerifyIdentity  
+- ctlResetPassword  
+fileciteturn1file2
+
+### • Fix:
+AuthProxy controls:
+- 2FA  
+- permissions  
+- session validation  
+
+### • Requirements:
+- FR 1.2 Identity verification  
+- FR 1.6 Enable 2FA  
+
+---
+
+## 7. Composite Pattern  
+### • Applied to:
+- BudgetCategoryComponent  
+- BudgetCategoryLeaf  
+- BudgetCategoryGroup  
+
+### • Problem:
+BudgetPlan stores categories as **List<String>**  
+fileciteturn1file1  
+Cannot represent nested categories.
+
+### • Fix:
+Model categories as a tree.
+
+### • Requirements:
+- FR 2.1 Budget creation (with categories)  
+- FR 2.5 Spending trends  
+
+---
+
+## 8. Flyweight Pattern  
+### • Applied to:
+- CurrencyFlyweight  
+- MerchantTypeFlyweight  
+
+### • Problem:
+Transaction.currency is a repeated String field.  
+fileciteturn1file1
+
+### • Fix:
+Store intrinsic shared state externally.
+
+### • Requirements:
+- FR 5.x Reporting & Analytics optimization  
+
+---
+
+# BEHAVIORAL PATTERNS (Lecture 7)  
+Source: Lecture 7 – Behavioral Patterns fileciteturn0file1
+
+## 9. Strategy Pattern  
+### • Applied to:
+- PaymentStrategy  
+- CardStrategy  
+- WalletStrategy  
+- BankStrategy  
+- GroupStrategy  
+
+### • Problem:
+IF/ELSE logic used to determine payment behavior inside PaymentsServiceBL.
+
+### • Fix:
+Use Strategy polymorphism.
+
+### • Requirements:
+- FR 9.1 Payment Processing  
+- FR 9.2 Recurring Payments  
+
+---
+
+## 10. Observer Pattern  
+### • Applied to:
+- NotificationSubject  
+- BudgetObserver  
+- GoalObserver  
+- PaymentObserver  
+- ContributionObserver  
+
+### • Problem:
+Notifications are manually triggered by controllers.
+
+### • Fix:
+Convert to event-driven observer subscriptions.
+
+### • Requirements:
+- FR 2.4 Budget notifications  
+- FR 3.2 Goal alerts  
+- FR 4.5 Contribution alerts  
+- FR 9.1 Payment confirmation  
+
+---
+
+## 11. Chain of Responsibility  
+### • Applied to:
+- ValidationHandler  
+- EmailFormatHandler  
+- DuplicateUserHandler  
+- PasswordStrengthHandler  
+- IdentityVerificationHandler  
+
+### • Problem:
+Creation & login validation is one long method.
+
+### • Fix:
+Break validation into chain.
+
+### • Requirements:
+- FR 1.1 Account creation  
+- FR 1.4 Password change  
+
+---
+
+## 12. State Pattern  
+### • Applied to:
+- GoalState  
+- PaymentState  
+
+### • Problem:
+Goals & payments store state as string.  
+fileciteturn1file1
+
+### • Fix:
+Use polymorphic State classes.
+
+### • Requirements:
+- FR 3.1 Goal tracking  
+- FR 9.1 Payment lifecycle  
+
+---
+
+## 13. Template Method  
+### • Applied to:
+- ReportTemplate  
+- MonthlyReport  
+- IncomeStatement  
+- GroupSavingsReport  
+
+### • Problem:
+Every report type implements similar generation steps.
+
+### • Fix:
+Templatize report generation into one base class.
+
+### • Requirements:
+- FR 7.1 Generate reports  
+
+---
+
+# SECTION B — REFACTORING TECHNIQUES (Lecture 8)  
+Source: Lecture 8 – Refactoring Principles fileciteturn4file0
+
+---
+
+# BAD SMELL ANALYSIS + EXACT CLASSES + REFACTORS APPLIED
+
+Below is a **complete table of all smells identified in YOUR SigmaPay files** and their fixes.
+
+---
+
+## 14. Large Class  
+### Affected Class:
+- UserAccount  
+fileciteturn1file1
+
+### Smell:
+Too many fields:  
+username, email, phone, passwordHash, address, 2fa, status …
+
+### Refactor:
+Extract Class →  
+- Credentials  
+- UserProfile  
+- SecuritySettings  
+
+---
+
+## 15. Primitive Obsession  
+### Affected Classes:
+- Transaction (double amount)  
+- BudgetPlan (double totalAmount)  
+- FinancialGoal (double targetAmount)  
+fileciteturn1file1
+
+### Refactor:
+Replace Value with Object → Money
+
+---
+
+## 16. Long Method  
+### Affected Classes:
+- IControllerAuth.ctlCreateAccount()  
+- IControllerPayments.ctlProcessPayment()  
+fileciteturn1file2
+
+### Refactor:
+Extract Method + Move Method into appropriate Services.
+
+---
+
+## 17. Feature Envy  
+### Affected:
+- PaymentService doing PaymentMethod’s job.
+
+### Refactor:
+Move Method calculation logic to PaymentStrategy / PaymentMethod subclasses.
+
+---
+
+## 18. Divergent Change  
+### Affected:
+- BudgetService
+
+### Refactor:
+Split into:
+- BudgetCreationService  
+- BudgetAnalyticsService  
+
+---
+
+## 19. Shotgun Surgery  
+### Affected:
+Password operations across:  
+- IControllerAuth  
+- AccountService  
+- AccountsRepository  
+
+### Refactor:
+Extract PasswordManager.
+
+---
+
+## 20. Message Chains  
+### Affected:
+ReportsService → user.getAccount().getTransactions().getMethod()
+
+### Refactor:
+Hide Delegate + Introduce Facade.
+
+---
+
+## 21. Data Clumps  
+### Affected:
+ReportFilters everywhere.
+
+### Refactor:
+Introduce Parameter Object → ReportFilter.
+
+---
+
+# SECTION C — FINAL SUMMARY  
+This deliverable includes **every required component**:
+- ✔ ALL applicable patterns from lectures 5–7  
+- ✔ ALL applicable refactorings from lecture 8  
+- ✔ EXACT SigmaPay class names extracted from your diagrams  
+- ✔ Full mapping to SRS functional requirements  
+- ✔ All citations  
+

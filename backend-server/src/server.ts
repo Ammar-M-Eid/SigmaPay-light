@@ -1,0 +1,104 @@
+import express, { Application } from 'express';
+import cors from 'cors';
+import { Controller, createApiRouter } from './api/controller';
+import {
+  AccountService,
+  BudgetService,
+  GoalService,
+  GroupSavingsService,
+  PaymentsServiceBL,
+  ReportingService,
+  NotificationServiceBL,
+} from './services/services';
+import {
+  AccountsRepositoryImpl,
+  UserRepositoryImpl,
+  TransactionRepositoryImpl,
+  BudgetRepositoryImpl,
+  GoalRepositoryImpl,
+  PaymentRepositoryImpl,
+  GroupSavingsRepositoryImpl,
+  NotificationRepositoryImpl,
+  DatabaseConnectionPool,
+} from './data/repositories';
+
+const PORT = 3001;
+
+// Initialize the application following the layered architecture
+function initializeApp(): Application {
+  const app = express();
+
+  // Middleware
+  app.use(cors());
+  app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
+
+  // PATTERN: Singleton - Initialize DatabaseConnectionPool
+  const dbPool = DatabaseConnectionPool.getInstance();
+  console.log('Database connection pool initialized');
+
+  // DATA LAYER - Initialize Repositories (in-memory mock)
+  const accountsRepository = new AccountsRepositoryImpl();
+  const userRepository = new UserRepositoryImpl();
+  const transactionRepository = new TransactionRepositoryImpl();
+  const budgetRepository = new BudgetRepositoryImpl();
+  const goalRepository = new GoalRepositoryImpl();
+  const paymentRepository = new PaymentRepositoryImpl();
+  const groupSavingsRepository = new GroupSavingsRepositoryImpl();
+  const notificationRepository = new NotificationRepositoryImpl();
+
+  console.log('Repositories initialized with in-memory storage');
+
+  // SERVICE LAYER - Initialize Services with Dependency Injection
+  const accountService = new AccountService(accountsRepository, userRepository);
+  const budgetService = new BudgetService(budgetRepository, transactionRepository);
+  const goalService = new GoalService(goalRepository);
+  const groupSavingsService = new GroupSavingsService(groupSavingsRepository);
+  const paymentsService = new PaymentsServiceBL(paymentRepository);
+  const reportingService = new ReportingService(transactionRepository);
+  const notificationService = new NotificationServiceBL(notificationRepository);
+
+  console.log('Services initialized with repository dependencies');
+
+  // CONTROLLER LAYER - Initialize Controller with Service dependencies
+  const controller = new Controller(
+    accountService,
+    budgetService,
+    goalService,
+    groupSavingsService,
+    paymentsService,
+    reportingService,
+    notificationService
+  );
+
+  console.log('Controller initialized with service dependencies');
+
+  // API ROUTES - Register Express routes
+  const apiRouter = createApiRouter(controller);
+  app.use('/api', apiRouter);
+
+  // Health check endpoint
+  app.get('/health', (req, res) => {
+    res.json({ status: 'ok', message: 'SigmaPay backend is running' });
+  });
+
+  console.log('API routes registered');
+
+  return app;
+}
+
+// Start the server
+const app = initializeApp();
+
+app.listen(PORT, () => {
+  console.log(`\n🚀 SigmaPay Backend Server started successfully!`);
+  console.log(`📡 Server running on http://localhost:${PORT}`);
+  console.log(`🏥 Health check: http://localhost:${PORT}/health`);
+  console.log(`📋 API Base: http://localhost:${PORT}/api`);
+  console.log(`\n✅ Architecture layers initialized:`);
+  console.log(`   - Data Layer: In-memory repositories`);
+  console.log(`   - Service Layer: Business logic services`);
+  console.log(`   - Controller Layer: REST API endpoints\n`);
+});
+
+export default app;
